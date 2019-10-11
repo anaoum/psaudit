@@ -1,5 +1,5 @@
 # psaudit
-Process auditor for macOS
+Process auditor for macOS. Verifies that all running processes have been signed by Apple.
 
 # Installation
 ```
