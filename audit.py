@@ -19,6 +19,8 @@ whitelist = [
         re.compile('^Authority=.*JQ525L2MZD.*'), # Adobe
         re.compile('^Authority=.*EQHXZ8M8AV.*'), # Google
         re.compile('^Authority=.*UBF8T346G9.*'), # Microsoft
+        re.compile('^/usr/local/Cellar/bash/[0-9.]+/bin/bash: code object is not signed at all$'),
+        re.compile('^/usr/local/Cellar/tor/[0-9._]+/bin/tor: code object is not signed at all$')
 ]
 
 def audit_process(path):
