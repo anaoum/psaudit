@@ -1,52 +1,34 @@
 #!/usr/bin/env python3
 
 import os
-import re
 import sys
-import queue
 import subprocess
-from multiprocessing import Pool
+import multiprocessing
 
 import psutil
 
-MAX_PROCS = 16
-
-signed_by_apple = re.compile('^Authority=Apple Root CA$')
-
 def audit_process(path):
     p = subprocess.run(['codesign', '-dvv', path], capture_output=True)
-    for line in p.stderr.decode('utf-8').split('\n'):
-        if signed_by_apple.match(line):
-            return True
-    return False
+    return path, b'\nAuthority=Apple Root CA\n' in p.stderr
 
 failed = 0
-
 process_paths = {}
 for p in psutil.process_iter(attrs={'pid', 'exe'}):
     pid, path = p.info['pid'], p.info['exe']
-    if pid == 0:
-        continue
-    elif pid == os.getpid():
+    if pid in {0, os.getpid()}:
         continue
     elif path is None:
-        print('could not determine executable for process', pid, file=sys.stderr)
+        print('could not determine path for process', pid, file=sys.stderr)
         failed += 1
         continue
     process_paths[pid] = path
-paths = list(set(process_paths.values()))
 
-with Pool(MAX_PROCS) as p:
-    audit_results = p.map(audit_process, paths)
-
-path_audits = {}
-for path, audit_result in zip(paths, audit_results):
-    path_audits[path] = audit_result
+with multiprocessing.Pool() as p:
+    path_audits = dict(p.map(audit_process, set(process_paths.values())))
 
 for pid, path in process_paths.items():
-    audit_result = path_audits[path]
-    if audit_result is False:
-        print(f'process {pid} ({process_paths[pid]}) not signed by Apple', file=sys.stderr)
+    if path_audits[path] is False:
+        print(f'process {pid} ({path}) not signed by Apple', file=sys.stderr)
         failed += 1
 
 sys.exit(failed)
