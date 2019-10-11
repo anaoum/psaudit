@@ -11,14 +11,9 @@ import psutil
 
 MAX_PROCS = 16
 
-whitelist = []
-
 signed_by_apple = re.compile('^Authority=Apple Root CA$')
 
 def audit_process(path):
-    for expr in whitelist:
-        if expr.match(path):
-            return True
     p = subprocess.run(['codesign', '-dvv', path], capture_output=True)
     for line in p.stderr.decode('utf-8').split('\n'):
         if signed_by_apple.match(line):
@@ -51,7 +46,7 @@ for path, audit_result in zip(paths, audit_results):
 for pid, path in process_paths.items():
     audit_result = path_audits[path]
     if audit_result is False:
-        print(f'process {pid} ({process_paths[pid]}) not signed by Apple and not in whitelist', file=sys.stderr)
+        print(f'process {pid} ({process_paths[pid]}) not signed by Apple', file=sys.stderr)
         failed += 1
 
 sys.exit(failed)
